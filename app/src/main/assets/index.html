@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            padding: 40px;
+            font-size: 16px;
+        }
+
+        input[type="text"], input[type="button"] {
+            width: 100%;
+            padding: 15px;
+            margin-top: 10px;
+            font-size: 18px; /* スマホでの読みやすさを考慮 */
+            box-sizing: border-box; /* paddingを含めた幅で計算 */
+        }
+    </style>
+</head>
+<body>
+<script type="text/javascript">
+        function playAnnounce(message) {
+            Android.playAnnounce(message);
+            console.log(message);
+        }
+    </script>
+
+<input type="text" id="inputText" placeholder="数字を入力" pattern="\\d{1,6}" maxlength="6">
+<input type="button" value="再生" onClick="playAnnounce(document.getElementById('inputText').value);" />
+<p id="text"></p>
+</body>
+</html>
