@@ -12,21 +12,21 @@
             width: 100%;
             padding: 15px;
             margin-top: 10px;
-            font-size: 18px; /* スマホでの読みやすさを考慮 */
-            box-sizing: border-box; /* paddingを含めた幅で計算 */
+            font-size: 18px;
+            box-sizing: border-box;
         }
     </style>
 </head>
 <body>
-<script type="text/javascript">
-        function playAnnounce(message) {
-            Android.playAnnounce(message);
-            console.log(message);
-        }
-    </script>
-
-<input type="text" id="inputText" value="file:///android_asset/index.html" readonly>
-<input type="button" value="開始" onClick="location.href='index.html'" />
+<script>
+function redirectToInputText() {
+    var inputText = document.getElementById('inputText').value;
+    Android.setURL(inputText);
+    location.href = inputText;
+}
+</script>
+<input type="text" id="inputText" value="https://racool.net/sample/rece/index.html">
+<input type="button" value="開始" onClick="redirectToInputText()" />
 <p id="text"></p>
 </body>
 </html>

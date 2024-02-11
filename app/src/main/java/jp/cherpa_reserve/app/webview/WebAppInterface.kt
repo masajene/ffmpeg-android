@@ -19,6 +19,12 @@ class WebAppInterface(private val context: Context) {
         }
     }
 
+    @JavascriptInterface
+    fun setURL(message: String): Boolean {
+        SharedPref().setKey("url", message)
+        return true
+    }
+
     private fun isValidNumber(number: String): Boolean {
         return number.matches(Regex("^[0-9]{1,4}$"))
     }
