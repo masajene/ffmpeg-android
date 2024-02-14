@@ -2,12 +2,15 @@ package jp.cherpa_reserve.app.webview
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.Handler
 import android.view.MotionEvent
+import android.view.View
 import android.view.Window
 import android.webkit.WebViewClient
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.arthenica.mobileffmpeg.Config
 import com.arthenica.mobileffmpeg.FFmpeg
@@ -69,14 +72,23 @@ class MainActivity : AppCompatActivity() {
                 MotionEvent.ACTION_DOWN -> {
                     if (x < SOME_THRESHOLD) {
                         isLeftEdgeTouched = true
+                        binding.view3.setBackgroundColor(getColor(R.color.purple_500))
                         setupTimeout()
                     }
                 }
                 MotionEvent.ACTION_UP -> {
                     if (isLeftEdgeTouched && x > (v.width - SOME_THRESHOLD)) {
                         rightEdgeTapCount++
-                        if (rightEdgeTapCount == 10) {
+                        binding.view4.run {
+                            visibility = View.GONE
+                            postDelayed({
+                                 visibility = View.VISIBLE
+                            }, 100)
+                        }
+//                        Toast.makeText(this, "$rightEdgeTapCount", Toast.LENGTH_SHORT).show()
+                        if (rightEdgeTapCount == 5) {
                             timeoutRunnable?.let { timeoutHandler.removeCallbacks(it) }
+                            binding.view3.setBackgroundColor(Color.parseColor("#ff1111"))
                             launchHiddenActivity()
                         }
                     } else {
@@ -93,6 +105,7 @@ class MainActivity : AppCompatActivity() {
         timeoutRunnable = Runnable {
             isLeftEdgeTouched = false
             rightEdgeTapCount = 0
+            binding.view3.setBackgroundColor(Color.parseColor("#ff1111"))
         }.also {
             timeoutHandler.postDelayed(it, 10000)
         }
