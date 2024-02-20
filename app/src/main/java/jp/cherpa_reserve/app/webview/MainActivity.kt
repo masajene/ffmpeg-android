@@ -1,21 +1,21 @@
 package jp.cherpa_reserve.app.webview
 
-import android.content.Context
 import android.content.Intent
 import android.graphics.Color
-import android.media.MediaPlayer
+import android.net.http.SslError
 import android.os.Bundle
 import android.os.Handler
 import android.view.MotionEvent
 import android.view.View
 import android.view.Window
+import android.webkit.SslErrorHandler
+import android.webkit.WebSettings
+import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import com.arthenica.mobileffmpeg.Config
-import com.arthenica.mobileffmpeg.FFmpeg
 import jp.cherpa_reserve.app.webview.databinding.ActivityMainBinding
-import java.io.File
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -28,8 +28,9 @@ class MainActivity : AppCompatActivity() {
     private var timeoutRunnable: Runnable? = null
 
     companion object {
-        private const val SOME_THRESHOLD = 100 // 画面端の閾値
+        private const val SOME_THRESHOLD = 300 // 画面端の閾値
         private const val LONG_PRESS_TIME = 500 // ロングプレスとして認識する時間 (ミリ秒)
+        private const val isRelease = true
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,6 +44,10 @@ class MainActivity : AppCompatActivity() {
 
         setupWebView()
         setupGesture()
+        if (isRelease) {
+            binding.view3.visibility = View.GONE
+            binding.view4.visibility = View.GONE
+        }
     }
 
     override fun onResume() {
@@ -53,9 +58,19 @@ class MainActivity : AppCompatActivity() {
     private fun setupWebView() {
         val url = SharedPref().getKey("url")
         binding.webview.apply {
+            val settings: WebSettings = settings
+            settings.domStorageEnabled = true
             val webAppInterface = WebAppInterface(this@MainActivity)
             addJavascriptInterface(webAppInterface, "Android")
-            webViewClient = WebViewClient()
+            webViewClient = object : WebViewClient() {
+                override fun onReceivedSslError(
+                    view: WebView?,
+                    handler: SslErrorHandler,
+                    error: SslError
+                ) {
+                    handler.proceed()
+                }
+            }
             settings.apply {
                 allowFileAccess = true
                 javaScriptCanOpenWindowsAutomatically = true
@@ -79,11 +94,13 @@ class MainActivity : AppCompatActivity() {
                 MotionEvent.ACTION_UP -> {
                     if (isLeftEdgeTouched && x > (v.width - SOME_THRESHOLD)) {
                         rightEdgeTapCount++
-                        binding.view4.run {
-                            visibility = View.GONE
-                            postDelayed({
-                                 visibility = View.VISIBLE
-                            }, 100)
+                        if (!isRelease) {
+                            binding.view4.run {
+                                visibility = View.GONE
+                                postDelayed({
+                                    visibility = View.VISIBLE
+                                }, 100)
+                            }
                         }
 //                        Toast.makeText(this, "$rightEdgeTapCount", Toast.LENGTH_SHORT).show()
                         if (rightEdgeTapCount == 5) {
