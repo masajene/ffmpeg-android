@@ -5,15 +5,17 @@ import android.graphics.Color
 import android.net.http.SslError
 import android.os.Bundle
 import android.os.Handler
+import android.os.Looper
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewTreeObserver
 import android.view.Window
 import android.webkit.SslErrorHandler
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import jp.cherpa_reserve.app.webview.CustomWebView.OnTouchEventCallback
 import jp.cherpa_reserve.app.webview.databinding.ActivityMainBinding
 
 
@@ -21,11 +23,14 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var kioskUtils: KioskUtils
+    private lateinit var noOperationTimeoutTime: Number
 
     private var isLeftEdgeTouched = false
     private var rightEdgeTapCount = 0
-    private val timeoutHandler = Handler()
-    private var timeoutRunnable: Runnable? = null
+    private val easterEggTimeoutHandler = Handler(Looper.getMainLooper())
+    private var easterEggTimeoutRunnable: Runnable? = null
+    private val noOperationTimeoutHandler = Handler(Looper.getMainLooper())
+    private var noOperationTimeoutRunnable: Runnable? = null
 
     companion object {
         private const val SOME_THRESHOLD = 300 // 画面端の閾値
@@ -36,6 +41,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         supportRequestWindowFeature(Window.FEATURE_NO_TITLE)
+        noOperationTimeoutTime = if (SharedPref().getLong("noOperationTimeoutTime") == 0L) 1000 * 60 else SharedPref().getLong("noOperationTimeoutTime")
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -48,14 +54,17 @@ class MainActivity : AppCompatActivity() {
             binding.view3.visibility = View.GONE
             binding.view4.visibility = View.GONE
         }
+
     }
 
     override fun onResume() {
         super.onResume()
+        noOperationTimeoutTime = if (SharedPref().getLong("noOperationTimeoutTime") == 0L) 1000 * 60 else SharedPref().getLong("noOperationTimeoutTime")
         setupWebView()
     }
 
     private fun setupWebView() {
+        setupNoOperationTimeout()
         val url = SharedPref().getKey("url")
         binding.webview.apply {
             val settings: WebSettings = settings
@@ -70,6 +79,10 @@ class MainActivity : AppCompatActivity() {
                 ) {
                     handler.proceed()
                 }
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    super.onPageFinished(view, url)
+                    binding.swiper.isRefreshing = false
+                }
             }
             settings.apply {
                 allowFileAccess = true
@@ -81,6 +94,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupGesture() {
+        binding.webview.setOnTouchEventCallback(object : OnTouchEventCallback {
+            override fun onTouchStateChanged(state: Int) {
+                println("onTouchStateChanged: $state")
+                if (state == MotionEvent.ACTION_UP || state == MotionEvent.ACTION_CANCEL) {
+                    setupNoOperationTimeout()
+                }
+            }
+        })
         binding.view2.setOnTouchListener { v, event ->
             val x = event.x.toInt()
             when (event.action) {
@@ -104,7 +125,7 @@ class MainActivity : AppCompatActivity() {
                         }
 //                        Toast.makeText(this, "$rightEdgeTapCount", Toast.LENGTH_SHORT).show()
                         if (rightEdgeTapCount == 5) {
-                            timeoutRunnable?.let { timeoutHandler.removeCallbacks(it) }
+                            easterEggTimeoutRunnable?.let { easterEggTimeoutHandler.removeCallbacks(it) }
                             binding.view3.setBackgroundColor(Color.parseColor("#ff1111"))
                             launchHiddenActivity()
                         }
@@ -116,15 +137,38 @@ class MainActivity : AppCompatActivity() {
             }
             true
         }
+
+        /// WebViewのスワイプ更新
+        binding.swiper.setOnRefreshListener {
+            binding.webview.reload();
+        };
+        binding.swiper.viewTreeObserver.addOnScrollChangedListener {
+            if (binding.webview.scrollY == 0)
+                binding.swiper.setEnabled(true);
+            else
+                binding.swiper.setEnabled(false);
+        }
     }
 
     private fun setupTimeout() {
-        timeoutRunnable = Runnable {
+        easterEggTimeoutRunnable = Runnable {
             isLeftEdgeTouched = false
             rightEdgeTapCount = 0
             binding.view3.setBackgroundColor(Color.parseColor("#ff1111"))
         }.also {
-            timeoutHandler.postDelayed(it, 10000)
+            easterEggTimeoutHandler.postDelayed(it, 10000)
+        }
+    }
+
+    private fun setupNoOperationTimeout() {
+        println("setupNoOperationTimeout!")
+        noOperationTimeoutRunnable?.let { noOperationTimeoutHandler.removeCallbacks(it) }
+        noOperationTimeoutRunnable = Runnable {
+            println("no operation timeout!")
+            binding.webview.reload()
+            setupNoOperationTimeout()
+        }.also {
+            noOperationTimeoutHandler.postDelayed(it, noOperationTimeoutTime.toLong())
         }
     }
 
@@ -132,5 +176,6 @@ class MainActivity : AppCompatActivity() {
         val intent = Intent(this, SettingActivity::class.java)
         startActivity(intent)
         rightEdgeTapCount = 0
+        noOperationTimeoutRunnable?.let { noOperationTimeoutHandler.removeCallbacks(it) }
     }
 }

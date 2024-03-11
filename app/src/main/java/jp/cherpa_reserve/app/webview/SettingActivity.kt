@@ -19,7 +19,14 @@ class SettingActivity: AppCompatActivity() {
         binding.textView.setText(url)
         binding.button.setOnClickListener {
             SharedPref().setKey("url", binding.textView.text.toString())
+            SharedPref().setKey("noOperationTimeoutTime", binding.timeoutEditText.text.toString().toLong() * 1000)
             finish()
         }
+
+        var noOperationTimeoutTime = SharedPref().getLong("noOperationTimeoutTime")
+        if (noOperationTimeoutTime == 0L) {
+            noOperationTimeoutTime = 1000 * 60
+        }
+        binding.timeoutEditText.setText((noOperationTimeoutTime / 1000).toString())
     }
 }

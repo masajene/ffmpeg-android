@@ -14,6 +14,10 @@ class SharedPref {
         return sharedPreferences.getString(keyName, "") ?: ""
     }
 
+    fun getLong(keyName: String): Long {
+        return sharedPreferences.getLong(keyName, 0L)
+    }
+
     // 汎用 指定したキーが存在するかどうかチェック
     fun getFlag(keyName: String): Boolean {
         return sharedPreferences.getBoolean(keyName, false)
@@ -23,6 +27,13 @@ class SharedPref {
     fun setKey(keyName: String, key: String) {
         val editor = sharedPreferences.edit()
         editor.putString(keyName, key)
+        editor.apply() // 保存
+    }
+
+    // 汎用 指定したキーに値を設定する
+    fun setKey(keyName: String, key: Long) {
+        val editor = sharedPreferences.edit()
+        editor.putLong(keyName, key)
         editor.apply() // 保存
     }
 
